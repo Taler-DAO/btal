@@ -1,0 +1,236 @@
+type Account = record { owner : principal; subaccount : opt blob };
+type ApyMetrics = record {
+  btc_rate : nat64;
+  btal_distributed : nat64;
+  ckbtc_distributed : nat64;
+  tal_debited : nat64;
+  total_provided_liquidity : nat64;
+};
+type CandidVault = record {
+  owner : Account;
+  vault_id : nat64;
+  base_rate : nat64;
+  borrowed_tal_amount : nat64;
+  ckbtc_margin_amount : nat64;
+  premium_rate : nat64;
+};
+type CanisterStatusResponse = record {
+  status : CanisterStatusType;
+  memory_size : nat;
+  cycles : nat;
+  settings : DefiniteCanisterSettings;
+  query_stats : QueryStats;
+  idle_cycles_burned_per_day : nat;
+  module_hash : opt blob;
+  reserved_cycles : nat;
+};
+type CanisterStatusType = variant { stopped; stopping; running };
+type DefiniteCanisterSettings = record {
+  freezing_threshold : nat;
+  controllers : vec principal;
+  reserved_cycles_limit : nat;
+  memory_allocation : nat;
+  compute_allocation : nat;
+};
+type Event = record { timestamp : nat64; payload : EventType };
+type EventType = variant {
+  ClaimLiquidityReturns : record {
+    block_index : nat64;
+    caller : Account;
+    amount : nat64;
+  };
+  SetVaultPremiumRate : record { vault_id : nat64; new_rate : nat64 };
+  TransferVaultOwnership : record { vault_id : nat64; new_owner : Account };
+  Upgrade : UpgradeArg;
+  Init : InitArg;
+  LiquidateVault : record { vault_id : nat64 };
+  ProvideLiquidity : record {
+    block_index : nat64;
+    caller : Account;
+    amount : nat64;
+  };
+  RedemptionOnVaults : record {
+    owner : principal;
+    tal_block_index : nat64;
+    tal_amount : nat64;
+    current_btc_rate : nat64;
+  };
+  OpenVault : record {
+    block_index : nat64;
+    owner : Account;
+    borrow : nat64;
+    ckbtc_margin : nat64;
+    premium_rate : nat64;
+  };
+  ChargeFee : record { btc_rate : nat64 };
+  AddMarginToVault : record {
+    block_index : nat64;
+    vault_id : nat64;
+    margin_added : nat64;
+  };
+  LeverageVault : record {
+    leverage : nat64;
+    vault_id : nat64;
+    last_btc_rate : nat64;
+  };
+  WithdrawLiquidity : record {
+    block_index : nat64;
+    caller : Account;
+    amount : nat64;
+  };
+  TransferExecuted : record { block_index : nat64; transfer_id : nat64 };
+  PushApyMetrics : record { btc_rate : nat64 };
+  RepayToVault : record {
+    block_index : nat64;
+    vault_id : nat64;
+    repayed_amount : nat64;
+  };
+  SendReserve : record { to : Account };
+  RedistributeVault : record { vault_id : nat64 };
+  CloseVault : record { block_index : opt nat64; vault_id : nat64 };
+  BorrowFromVault : record { vault_id : nat64; borrowed_amount : nat64 };
+};
+type GetEventsArg = record { start : nat64; length : nat64 };
+type GetEventsResult = record { total_event_count : nat64; events : vec Event };
+type InitArg = record {
+  ckbtc_ledger_id : principal;
+  taler_ledger_id : principal;
+  xrc_id : principal;
+};
+type JsonEntry = record { id : text; value : nat64 };
+type LeverageArg = record { leverage_e8s : nat64; vault_id : nat64 };
+type LiquidityArg = record { subaccount : opt blob; amount : nat64 };
+type LiquidityEvent = record {
+  timestamp : nat64;
+  event_type : LiquidityEventType;
+};
+type LiquidityEventType = variant {
+  Withdraw : record { block_index : nat64; amount : nat64 };
+  YieldDistribution : record { tal_amount : nat64 };
+  ClaimReturns : record { block_index : nat64; amount : nat64 };
+  LiquidationShare : record { tal_amount : nat64; ckbtc_amount : nat64 };
+  Provide : record { block_index : nat64; amount : nat64 };
+};
+type LiquidityStatus = record {
+  liquidity_provided : nat64;
+  total_liquidity_provided : nat64;
+  available_liquidity_reward : nat64;
+  total_available_returns : nat64;
+  liquidation_pool_share : nat64;
+};
+type Mode = variant { ReadOnly; GeneralAvailability };
+type OpenVaultArg = record {
+  maybe_subaccount : opt blob;
+  borrow : nat64;
+  ckbtc_margin : nat64;
+  premium_rate : opt nat64;
+};
+type OpenVaultResult = record { block_index : nat64; vault_id : nat64 };
+type ProtocolArg = variant { Upgrade : UpgradeArg; Init : InitArg };
+type ProtocolError = variant {
+  GenericError : text;
+  TemporarilyUnavailable : text;
+  TransferError : TransferError;
+  AlreadyProcessing;
+  AnonymousCallerNotAllowed;
+  AmountTooLow : record { minimum_amount : nat };
+  TransferFromError : record { TransferFromError; nat };
+  CallerNotOwner;
+};
+type ProtocolStatus = record {
+  liquidation_pool_apy : opt nat64;
+  mode : Mode;
+  total_tal_borrowed : nat64;
+  total_collateral_ratio : nat64;
+  total_ckbtc_margin : nat64;
+  premium_fee_histogram : vec nat64;
+  last_btc_timestamp : nat64;
+  last_btc_rate : nat64;
+};
+type QueryStats = record {
+  response_payload_bytes_total : nat;
+  num_instructions_total : nat;
+  num_calls_total : nat;
+  request_payload_bytes_total : nat;
+};
+type Result = variant { Ok : nat64; Err : ProtocolError };
+type Result_1 = variant { Ok : opt nat64; Err : ProtocolError };
+type Result_2 = variant { Ok; Err : ProtocolError };
+type Result_3 = variant { Ok : OpenVaultResult; Err : ProtocolError };
+type Result_4 = variant { Ok : SuccessWithFee; Err : ProtocolError };
+type SetVaultPremiumArg = record { vault_id : nat64; new_rate : nat64 };
+type SuccessWithFee = record { block_index : nat; fee_amount_paid : nat };
+type TransferError = variant {
+  GenericError : record { message : text; error_code : nat };
+  TemporarilyUnavailable;
+  BadBurn : record { min_burn_amount : nat };
+  Duplicate : record { duplicate_of : nat };
+  BadFee : record { expected_fee : nat };
+  CreatedInFuture : record { ledger_time : nat64 };
+  TooOld;
+  InsufficientFunds : record { balance : nat };
+};
+type TransferFromError = variant {
+  GenericError : record { message : text; error_code : nat };
+  TemporarilyUnavailable;
+  InsufficientAllowance : record { allowance : nat };
+  BadBurn : record { min_burn_amount : nat };
+  Duplicate : record { duplicate_of : nat };
+  BadFee : record { expected_fee : nat };
+  CreatedInFuture : record { ledger_time : nat64 };
+  TooOld;
+  InsufficientFunds : record { balance : nat };
+};
+type TransferVaultArg = record { vault_id : nat64; new_owner : Account };
+type UpgradeArg = record { mode : opt Mode };
+type Vault = record {
+  owner : Account;
+  vault_id : nat64;
+  borrowed_tal_amount : nat64;
+  ckbtc_margin_amount : nat64;
+  premium_rate : nat64;
+};
+type VaultArg = record { vault_id : nat64; amount : nat64 };
+type VaultEvent = record { timestamp : nat64; event_type : VaultEventType };
+type VaultEventType = variant {
+  Leverage : record { leverage_e8s : nat64 };
+  AddMargin : record { block_index : nat64; ckbtc_amount : nat64 };
+  Redeemed : record { tal_amount : nat64; ckbtc_amount : nat64 };
+  Closed : record { block_index : opt nat64 };
+  Borrowed : record { amount : nat64 };
+  Opened : record { block_index : nat64; margin : nat64 };
+  Redistributed;
+  Liquidated;
+  RepayDebt : record { block_index : nat64; tal_amount : nat64 };
+};
+service : (ProtocolArg) -> {
+  // Vault related endpoints
+  open_vault : (OpenVaultArg) -> (Result_3);
+  add_margin_to_vault : (VaultArg) -> (Result);
+  borrow_from_vault : (VaultArg) -> (Result);
+  repay_to_vault : (VaultArg) -> (Result);
+  set_vault_premium_rate : (SetVaultPremiumArg) -> (Result_2);
+  transfer_vault : (TransferVaultArg) -> (Result_2);
+  leverage_vault : (LeverageArg) -> (Result_2);
+  close_vault : (nat64) -> (Result_1);
+
+  // Liquidity related endpoints.
+  provide_liquidity : (LiquidityArg) -> (Result);
+  withdraw_liquidity : (LiquidityArg) -> (Result);
+  claim_liquidity_returns : (opt blob) -> (Result);
+
+  // Redeem ckBTC from bTAL
+  redeem_ckbtc : (nat64) -> (Result_4);
+
+  // Read the state of the protocol.
+  get_apy_metrics : (GetEventsArg) -> (vec ApyMetrics) query;
+  get_canister_status : () -> (CanisterStatusResponse);
+  get_events : (GetEventsArg) -> (GetEventsResult) query;
+  get_liquidation_pool : () -> (vec JsonEntry) query;
+  get_liquidity_history : (opt Account) -> (vec LiquidityEvent) query;
+  get_liquidity_status : (opt Account) -> (LiquidityStatus) query;
+  get_protocol_status : () -> (ProtocolStatus) query;
+  get_user_vaults : (opt Account) -> (vec CandidVault) query;
+  get_vault_history : (nat64) -> (vec VaultEvent) query;
+  get_vaults : () -> (vec Vault) query;
+}
