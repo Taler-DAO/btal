@@ -206,8 +206,8 @@ type VaultEventType = variant {
 service : (ProtocolArg) -> {
   // Vault related endpoints
   open_vault : (OpenVaultArg) -> (Result_3);
-  add_margin_to_vault : (VaultArg) -> (Result);
   borrow_from_vault : (VaultArg) -> (Result);
+  add_margin_to_vault : (VaultArg) -> (Result);
   repay_to_vault : (VaultArg) -> (Result);
   set_vault_premium_rate : (SetVaultPremiumArg) -> (Result_2);
   transfer_vault : (TransferVaultArg) -> (Result_2);
